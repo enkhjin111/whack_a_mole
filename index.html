@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whack-a-Mole Game</title>
+    <style type="text/css">
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: white;
+            background-image: url('pic1.png');
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: cover;
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            flex-direction: column;
+            padding-top: 50px;
+            position: relative;
+        }
+
+        #gameArea {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 80px;
+            max-width: 600px;
+            margin: 20px auto;
+        }
+
+        .hole {
+            width: 110px;
+            height: 110px;
+            background-color: #b5e1ff;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden; 
+        }
+
+        .hole img {
+            width: 200%;
+            height: 200%;
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            display: none;
+        }
+
+        .hole.active img {
+            display: block;
+        }
+
+        #scoreboard, #timer {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 10px;
+            z-index: 1; 
+        }
+
+        #startButton {
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            color: white;
+            background-color: #FFDA44; 
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            z-index: 1;
+            margin: 45px auto; 
+            display: block; 
+        }
+
+        #startButton:hover {
+            background-color: #C6A32C; 
+        }
+
+        #cursor {
+            width: 170px;
+            height: 170px;
+            position: absolute;
+            display: none;
+            pointer-events: none;
+            z-index: 10;
+            transform: translate(-10px, 25px);
+            animation: rotate 1.5s infinite linear;
+            background-image: url('ham.png'); 
+            background-size: contain; 
+            background-repeat: no-repeat; 
+        }
+
+        @keyframes rotate {
+            from {
+                transform: translate(10px, -25px) rotate(-25deg);
+            }
+            to {
+                transform: translate(10px, -25px) rotate(-80deg);
+            }
+        }
+
+        #resultImage {
+            max-width: 900px; 
+            height: auto; 
+            display: none; 
+            margin: 10px auto; 
+            margin-top: -150px; 
+        }
+    </style>
+</head>
+<body>
+    <div id="cursor"></div> 
+    <audio id="clickSound" src="sound.mp3"></audio>
+
+    <button id="startButton">LET'S PLAY</button>
+    <div id="gameArea">
+        <div class="hole" id="hole1"><img src="mole.png" alt="Mole"></div>
+        <div class="hole" id="hole2"><img src="mole.png" alt="Mole"></div>
+        <div class="hole" id="hole3"><img src="mole.png" alt="Mole"></div>
+        <div class="hole" id="hole4"><img src="mole.png" alt="Mole"></div>
+        <div class="hole" id="hole5"><img src="mole.png" alt="Mole"></div>
+        <div class="hole" id="hole6"><img src="mole.png" alt="Mole"></div>
+        <div class="hole" id="hole7"><img src="mole.png" alt="Mole"></div>
+        <div class="hole" id="hole8"><img src="mole.png" alt="Mole"></div>
+        <div class="hole" id="hole9"><img src="mole.png" alt="Mole"></div>
+    </div>
+    <div id="scoreboard">
+        Score: <span id="score">0</span>
+    </div>
+    <div id="timer">Time: <span id="time">30</span> seconds</div>
+    <img id="resultImage" src="" alt="">
+
+    <script type="text/javascript">
+        const cursor = document.getElementById('cursor');
+        const clickSound = document.getElementById('clickSound'); 
+
+        window.onmousemove = function(e) {
+            cursor.style.left = e.clientX + "px";
+            cursor.style.top = e.clientY + "px";
+            cursor.style.display = 'block'; 
+        };
+
+        window.onclick = function() {
+            clickSound.play(); 
+        };
+
+        let score = 0;
+        let activeMole;
+        let gameInterval;
+        let timerInterval;
+        let timeLeft = 30;
+
+        document.getElementById('startButton').addEventListener('click', startGame);
+
+        function startGame() {
+            score = 0;
+            timeLeft = 30;
+            updateScore();
+            updateTime();
+            resetHoles(); 
+            document.getElementById('gameArea').style.display = 'grid'; 
+            document.getElementById('resultImage').style.display = 'none'; 
+            gameInterval = setInterval(showMole, randomInterval());
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function showMole() {
+            resetHoles(); 
+
+            const holes = document.querySelectorAll('.hole');
+            const randomIndex = Math.floor(Math.random() * holes.length);
+            activeMole = holes[randomIndex];
+            activeMole.classList.add('active');
+
+            
+            const moleImage = activeMole.querySelector('img');
+            moleImage.onclick = whackMole;
+        }
+
+        function whackMole() {
+            score++; 
+            updateScore();
+            resetHoles(); 
+        }
+
+        function randomInterval() {
+            return Math.floor(Math.random() * 350) + 150;
+        }
+
+        function updateScore() {
+            document.getElementById('score').innerText = score;
+        }
+
+        function updateTime() {
+            document.getElementById('time').innerText = timeLeft;
+        }
+
+        function updateTimer() {
+            timeLeft--;
+            updateTime();
+
+            if (timeLeft <= 0) {
+                clearInterval(gameInterval);
+                clearInterval(timerInterval);
+                hideGameArea(); 
+                displayResultImage(score); 
+                cursor.style.display = 'none'; 
+            }
+        }
+
+        function hideGameArea() {
+            document.getElementById('gameArea').style.display = 'none'; 
+        }
+
+        function displayResultImage(score) {
+            const resultImage = document.getElementById('resultImage');
+            
+            if (score <= 1) {
+                resultImage.src = '1.png'; 
+            } else if (score <= 6) {
+                resultImage.src = '2.png'; 
+            } else {
+                resultImage.src = '3.png'; 
+            }
+
+            resultImage.style.display = 'block'; 
+        }
+
+        function resetHoles() {
+            document.querySelectorAll('.hole').forEach(hole => {
+                hole.classList.remove('active'); 
+                const moleImage = hole.querySelector('img');
+                moleImage.onclick = null; 
+            });
+            activeMole = null;
+        }
+    </script>
+</body>
+</html>
